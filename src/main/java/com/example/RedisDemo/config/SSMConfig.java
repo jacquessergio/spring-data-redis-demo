@@ -25,7 +25,7 @@ public class SSMConfig {
 
 		} catch (final Exception e) {
 			e.printStackTrace();
-			return null;
+			return "";
 		}
 	}
 

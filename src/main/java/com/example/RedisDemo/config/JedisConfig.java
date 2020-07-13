@@ -2,6 +2,8 @@ package com.example.RedisDemo.config;
 
 import java.time.Duration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -12,11 +14,14 @@ import org.springframework.data.redis.connection.jedis.JedisClientConfiguration.
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 
+import com.example.RedisDemo.exception.RedisException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
 public class JedisConfig {
+
+	public static final Logger LOG = LoggerFactory.getLogger(JedisConfig.class);
 
 	// @Value("${spring.redis.host}")
 	// private String host;
@@ -64,12 +69,16 @@ public class JedisConfig {
 	//
 	// }
 
-	@Bean
-	public JedisConnectionFactory jedisConnectionFactory() {
+	@Bean("JedisConnectionFactory")
+	public JedisConnectionFactory jedisConnectionFactory() throws RedisException {
 
 		final RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration();
 
 		try {
+
+			if (jsonProperty == null || jsonProperty.isEmpty()) {
+				return new JedisConnectionFactory();
+			}
 
 			final JsonNode jsonNode = new ObjectMapper().readTree(jsonProperty);
 
@@ -84,17 +93,17 @@ public class JedisConfig {
 
 			final JedisConnectionFactory factory = new JedisConnectionFactory(redisStandaloneConfiguration,
 					jedisClientConfiguration.build());
-
 			return factory;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
+
+		} catch (final Exception e) {
+			LOG.info("Ocorreu um erro ao processar a solicitação!", e);
+			throw new RedisException("Erro ao tentar Criar o bean JedisConnectionFactory", e);
 		}
 
 	}
 
 	@Bean
-	public RedisTemplate<String, Object> redisTemplate() {
+	public RedisTemplate<String, Object> redisTemplate() throws RedisException {
 		final RedisTemplate<String, Object> template = new RedisTemplate<>();
 		template.setConnectionFactory(jedisConnectionFactory());
 		return template;
